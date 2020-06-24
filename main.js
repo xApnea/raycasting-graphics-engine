@@ -116,13 +116,10 @@ function main() {
   }
 
   function drawPlayer(gl) {
-    var size = 1;          // 2 components per iteration
-    gl.vertexAttribPointer(positionAttributeLocation, size, gl.FLOAT, false, 0, 0);
-
-    setPoint(gl, playerX, playerY);
-    // Set a random color.
+    setRectangle(gl, playerX, playerY, 8, 8);
+    //red
     gl.uniform4f(colorUniformLocation, 1, 0, 0, 1);
-    gl.drawArrays(gl.POINTS, 0, 2);
+    draw(gl);
     //draw(gl);
 
     console.log(playerX+playerDX*5);
@@ -182,8 +179,8 @@ function main() {
   }
 
   function setLine(gl, x1, y1, x2, y2) {
-    // x2 += 1;
-    // y2 += 1;
+    x1 += 3;
+    y1 += 3;
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
         x1, y1,
         // x2, y1,
