@@ -1,6 +1,8 @@
 window.onload = main;
 
 const pi = Math.PI;
+const piOverTwo = (pi / 2);
+const threePiOverTwo = ((3 * pi) / 2);
 var playerX = 300;
 var playerY = 300;
 var playerAngle = 0.0;
@@ -42,7 +44,8 @@ document.addEventListener('keydown', function(event) {
     playerDY = Math.sin(playerAngle) * 5;
     main();
   }
-  else if(event.keyCode == 87) { //W
+
+  if(event.keyCode == 87) { //W
     playerX += playerDX;
     playerY += playerDY;
     main();
@@ -101,6 +104,7 @@ function main() {
 
   drawMap(gl);
   drawPlayer(gl);
+  drawRays(gl);
 
 
 
@@ -122,9 +126,9 @@ function main() {
     draw(gl);
     //draw(gl);
 
-    console.log(playerX+playerDX*5);
-    console.log(playerY+playerDY*5);
-    console.log(playerAngle);
+    // console.log(playerX+playerDX*5);
+    // console.log(playerY+playerDY*5);
+    // console.log(playerAngle);
 
     var size = 2;          // 2 components per iteration
     gl.vertexAttribPointer(positionAttributeLocation, size, gl.FLOAT, false, 0, 0);
@@ -142,7 +146,7 @@ function main() {
   function drawMap(gl) {
     for (var x = 0; x < mapX; x++) {
       for (var y = 0; y < mapY; y++) {
-        setRectangle(gl, x * 40 + 100, y * 40 + 100, 39, 39);
+        setRectangle(gl, x * 64, y * 64, 63, 63);
         if (map[x][y] === '#') {
           gl.uniform4f(colorUniformLocation, 1, 1, 1, 1);
         } else {
@@ -154,13 +158,106 @@ function main() {
   }
 
   function drawRays() {
-    var ray, mx, my, mp, depthOfField = 0; //int
-    var rx, ry, ra, xo, yo = 0.0; //float
+    var ray, mX, mY, mapPosition, depthOfField = 0; //int
+    var rayX, rayY, rayAngle, xOffset, yOffset = 0.0; //float
+    rayAngle = playerAngle;
 
     for (ray = 0; ray < 1; ray++) {
-      var aTan = -1/Math.tan(ra);
-      if(ra > pi) {} //looking down
+      depthOfField = 0;
+      var aTan = (-1 / Math.tan(rayAngle));
+
+      //looking down
+      if(rayAngle > pi) {
+        rayY = (((playerY>>6)<<6) - 0.0001);
+        rayX = (playerY - rayY) * aTan + playerX;
+        yOffset = -64;
+        xOffset = -yOffset * aTan;
+      }
+
+      //looking up
+      else if(rayAngle < pi) {
+        rayY = (((playerY>>6)<<6) + 64);
+        rayX = (playerY - rayY) * aTan + playerX;
+        yOffset = 64;
+        xOffset = -yOffset * aTan;
+      }
+      if (rayAngle == 0 || rayAngle == pi) {
+        console.log('At perfect horizontal angles')
+        rayX += playerX;
+        rayY += playerY;
+        depthOfField = 8;
+      }
+      while (depthOfField < 8) {
+        mX = (rayX>>6);
+        mY = (rayY>>6);
+        if (mX < 0 || mY < 0) {
+          depthOfField = 8;
+        }
+        else if (mX < 8 && mY < 8 && map[mX][mY] === '#') {
+          depthOfField = 8;
+        } else {
+          rayX += xOffset;
+          rayY += yOffset;
+          depthOfField++;
+        }
+      }
+
+      setLine(gl, playerX, playerY, rayX, rayY);
+      gl.uniform4f(colorUniformLocation, 0, 1, 0, 1);
+      gl.drawArrays(gl.LINES, 0, 2);
+
+
+      // VERTICAL LINE CHECK
+      depthOfField = 0;
+      var negTan = (-Math.tan(rayAngle));
+
+      //looking left
+      if(rayAngle > piOverTwo && rayAngle < threePiOverTwo) {
+        rayX = (((playerX>>6)<<6) - 0.0001);
+        rayY = (playerX - rayX) * negTan + playerY;
+        xOffset = -64;
+        yOffset = -xOffset * negTan;
+      }
+
+      //looking right
+      else if(rayAngle < piOverTwo || rayAngle > threePiOverTwo) {
+        rayX = (((playerX>>6)<<6) + 64);
+        rayY = (playerX - rayX) * negTan + playerY;
+        xOffset = 64;
+        yOffset = -xOffset * negTan;
+      }
+
+      // Check to see if perfectly vertical playerAngle
+      if (rayAngle == (3*pi)/2 || rayAngle == pi/2) {
+        console.log('At perfect vertical angles')
+        rayX += playerX;
+        rayY += playerY;
+        depthOfField = 8;
+      }
+      while (depthOfField < 8) {
+        mX = (rayX>>6);
+        mY = (rayY>>6);
+        if (mX < 0 || mY < 0) {
+          depthOfField = 8;
+        }
+        else if (mX < 8 && mY < 8 && map[mX][mY] === '#') {
+          depthOfField = 8;
+        } else {
+          rayX += xOffset;
+          rayY += yOffset;
+          depthOfField++;
+        }
+      }
+
+      setLine(gl, playerX, playerY, rayX, rayY);
+
+      gl.uniform4f(colorUniformLocation, 0, 0, 1, 1);
+
+      gl.drawArrays(gl.LINES, 0, 2);
     }
+  }
+
+  function checkHorizontalGridLines() {
   }
 
   function setRectangle(gl, x, y, width, height) {
@@ -179,8 +276,8 @@ function main() {
   }
 
   function setLine(gl, x1, y1, x2, y2) {
-    x1 += 3;
-    y1 += 3;
+    // x1 += 3;
+    // y1 += 3;
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
         x1, y1,
         // x2, y1,
