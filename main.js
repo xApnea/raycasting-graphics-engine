@@ -164,6 +164,9 @@ function main() {
 
     for (ray = 0; ray < 1; ray++) {
       depthOfField = 0;
+      var horizDistance = 1000000; //just a really high number
+      var horizX = playerX;
+      var horizY = playerY;
       var aTan = (-1 / Math.tan(rayAngle));
 
       //looking down
@@ -195,6 +198,9 @@ function main() {
         }
         else if (mX < 8 && mY < 8 && map[mX][mY] === '#') {
           depthOfField = 8;
+          horizX = rayX;
+          horizY = rayY;
+          horizDistance = getRayDistanceFromPlayer(playerX, playerY, horizX, horizY, rayAngle);
         } else {
           rayX += xOffset;
           rayY += yOffset;
@@ -202,13 +208,17 @@ function main() {
         }
       }
 
-      setLine(gl, playerX, playerY, rayX, rayY);
-      gl.uniform4f(colorUniformLocation, 0, 1, 0, 1);
-      gl.drawArrays(gl.LINES, 0, 2);
+      // setLine(gl, playerX, playerY, rayX, rayY);
+      // gl.uniform4f(colorUniformLocation, 0, 1, 0, 1);
+      // gl.drawArrays(gl.LINES, 0, 2);
 
 
       // VERTICAL LINE CHECK
       depthOfField = 0;
+      var vertDistance = 1000000; //just a really high number
+      var vertX = playerX;
+      var vertY = playerY;
+
       var negTan = (-Math.tan(rayAngle));
 
       //looking left
@@ -242,6 +252,9 @@ function main() {
         }
         else if (mX < 8 && mY < 8 && map[mX][mY] === '#') {
           depthOfField = 8;
+          vertX = rayX;
+          vertY = rayY;
+          vertDistance = getRayDistanceFromPlayer(playerX, playerY, vertX, vertY, rayAngle);
         } else {
           rayX += xOffset;
           rayY += yOffset;
@@ -249,15 +262,27 @@ function main() {
         }
       }
 
+      //Only draw the ray that has the shortest distance
+      if (vertDistance < horizDistance) {
+        rayX = vertX;
+        rayY = vertY;
+      }
+      if (vertDistance > horizDistance) {
+        rayX = horizX;
+        rayY = horizY;
+      }
       setLine(gl, playerX, playerY, rayX, rayY);
 
-      gl.uniform4f(colorUniformLocation, 0, 0, 1, 1);
+      gl.uniform4f(colorUniformLocation, 0, 1, 0, 1);
 
       gl.drawArrays(gl.LINES, 0, 2);
     }
   }
 
-  function checkHorizontalGridLines() {
+  function getRayDistanceFromPlayer(playerX, playerY, rayX, rayY, angle) {
+    //Use the pythagorean theorum to find the hypotenuse
+    const hypotenuse = Math.sqrt((rayX - playerX) * (rayX - playerX) + (playerY - rayY) * (playerY - rayY));
+    return hypotenuse;
   }
 
   function setRectangle(gl, x, y, width, height) {
