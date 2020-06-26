@@ -3,6 +3,8 @@ window.onload = main;
 const pi = Math.PI;
 const piOverTwo = (pi / 2);
 const threePiOverTwo = ((3 * pi) / 2);
+const degree = 0.0174533; // this is one degree in radians
+
 var playerX = 300;
 var playerY = 300;
 var playerAngle = 0.0;
@@ -10,6 +12,8 @@ var playerDX = Math.cos(playerAngle) * 5;
 var playerDY = Math.sin(playerAngle) * 5;
 const mapX = 8;
 const mapY = 8;
+const mapSize = mapX * mapY;
+
 
 
 const map = [
@@ -159,10 +163,12 @@ function main() {
 
   function drawRays() {
     var ray, mX, mY, mapPosition, depthOfField = 0; //int
-    var rayX, rayY, rayAngle, xOffset, yOffset = 0.0; //float
-    rayAngle = playerAngle;
+    var rayX, rayY, rayAngle, xOffset, yOffset, distance= 0.0; //float
+    rayAngle = playerAngle - degree * 30;
+    if (rayAngle < 0) {rayAngle += 2 * pi;}
+    if (rayAngle > 2 * pi) {rayAngle -= 2 * pi}
 
-    for (ray = 0; ray < 1; ray++) {
+    for (ray = 0; ray < 60; ray++) {
       depthOfField = 0;
       var horizDistance = 1000000; //just a really high number
       var horizX = playerX;
@@ -266,16 +272,47 @@ function main() {
       if (vertDistance < horizDistance) {
         rayX = vertX;
         rayY = vertY;
+        distance = vertDistance; //set the distance for that ray
+        gl.uniform4f(colorUniformLocation, 0, .9, 0, 1);
+
       }
       if (vertDistance > horizDistance) {
         rayX = horizX;
         rayY = horizY;
+        distance = horizDistance; //set the distance for that ray
+        gl.uniform4f(colorUniformLocation, 0, .7, 0, 1);
       }
+
+      //the distance calculated above will be used to draw the 3d scene
+
+      //draw the ray
       setLine(gl, playerX, playerY, rayX, rayY);
-
-      gl.uniform4f(colorUniformLocation, 0, 1, 0, 1);
-
       gl.drawArrays(gl.LINES, 0, 2);
+
+      //draw the 3D walls
+      // 320 by 160 pixels
+
+      //This fixes the fisheye effect by getting a flat surface
+      var angle = playerAngle - rayAngle;
+      if (angle < 0) {angle += 2 * pi;}
+      if (angle > 2 * pi) {angle -= 2 * pi;}
+      distance = distance * Math.cos(angle);
+
+      var rectangleHeight = (mapSize * 320) / distance;
+      if (rectangleHeight > 320) { //cap the height at the screen height
+        rectangleHeight = 320;
+      }
+
+      var rectangleOffset = 160-rectangleHeight/2;
+
+      setRectangle(gl, ray * 8 + 530, rectangleOffset, 8, rectangleHeight)
+      draw(gl);
+
+      // the next ray will be cast one degree over, set new limits for the angle
+      rayAngle += degree;
+      if (rayAngle < 0) {rayAngle += 2 * pi;}
+      if (rayAngle > 2 * pi) {rayAngle -= 2 * pi}
+
     }
   }
 
